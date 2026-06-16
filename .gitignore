@@ -1,0 +1,45 @@
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache/test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python packaging/build artifacts
+*.egg-info/
+build/
+dist/
+
+# Generated agent/run output
+runs/
+headtohead_out/
+agent_workspace/
+
+# Local Hermes/project metadata
+.hermes/
+
+# Logs and local databases
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Local/private handoff notes
+HANDOFF.md
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

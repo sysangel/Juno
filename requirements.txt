@@ -1,0 +1,12 @@
+# Self-iterating programming + testing agent loop
+#
+# Pinned to the 1.x LangChain / LangGraph generation actually installed and
+# tested on this machine. langgraph.errors.GraphRecursionError lives in 1.x,
+# and langchain-openai 1.x / pytest 9.x are what the code was validated against.
+
+langgraph>=1,<2
+langchain>=1,<2
+langchain-openai>=1,<2
+langchain-aws>=1,<2          # optional Bedrock path (ChatBedrockConverse)
+pytest>=9,<10
+python-dotenv>=1,<2

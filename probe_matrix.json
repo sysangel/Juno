@@ -1,0 +1,80 @@
+[
+  {
+    "label": "kimi_tests_parasail",
+    "status": 200,
+    "elapsed": 146.4,
+    "content_len": 4363,
+    "n_test_defs": 19,
+    "out_tok": 12000,
+    "reasoning_tok": 10658,
+    "finish": "length",
+    "served": "Parasail",
+    "verdict": "WORKS"
+  },
+  {
+    "label": "kimi_tests_fireworks",
+    "status": 404,
+    "elapsed": 0.5,
+    "error": "No allowed providers are available for the selected model."
+  },
+  {
+    "label": "kimi_tests_deepinfra",
+    "status": 404,
+    "elapsed": 0.5,
+    "error": "No allowed providers are available for the selected model."
+  },
+  {
+    "label": "kimi_tests_together",
+    "status": 200,
+    "elapsed": 120.3,
+    "content_len": 5422,
+    "n_test_defs": 24,
+    "out_tok": 9907,
+    "reasoning_tok": 8285,
+    "finish": "stop",
+    "served": "Together",
+    "verdict": "WORKS"
+  },
+  {
+    "label": "kimi_tests_baseten",
+    "status": 404,
+    "elapsed": 0.5,
+    "error": "No allowed providers are available for the selected model."
+  },
+  {
+    "label": "kimi_tests_noReason_parasail",
+    "status": 400,
+    "elapsed": 0.5,
+    "error": "Reasoning is mandatory for this endpoint and cannot be disabled."
+  },
+  {
+    "label": "kimi_tests_noReason_fireworks",
+    "status": 404,
+    "elapsed": 0.5,
+    "error": "No allowed providers are available for the selected model."
+  },
+  {
+    "label": "kimi_code_cheapest",
+    "status": 200,
+    "elapsed": 110.1,
+    "content_len": 6158,
+    "n_test_defs": 0,
+    "out_tok": 8318,
+    "reasoning_tok": 6823,
+    "finish": "stop",
+    "served": "Parasail",
+    "verdict": "WORKS"
+  },
+  {
+    "label": "deepseek_tests_ctrl",
+    "status": 200,
+    "elapsed": 74.2,
+    "content_len": 7224,
+    "n_test_defs": 38,
+    "out_tok": 5366,
+    "reasoning_tok": 3187,
+    "finish": "stop",
+    "served": "GMICloud",
+    "verdict": "WORKS"
+  }
+]

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "juno-agent-harness"
+version = "0.1.0"
+description = "A lightweight Hermes-inspired terminal agent harness with memory, sessions, provider switching, and the Juno CLI UI."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "sysangel" }]
+dependencies = [
+  "langgraph>=1.0,<2",
+  "langchain>=0.3,<1",
+  "langchain-openai>=0.2,<1",
+  "langchain-aws>=0.2,<1",
+  "openai>=1.40,<2",
+  "python-dotenv>=1,<2",
+  "prompt_toolkit>=3,<4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[project.scripts]
+juno = "harness:main"
+
+[tool.setuptools]
+py-modules = [
+  "agent_loop",
+  "chat",
+  "harness",
+  "headtohead",
+  "kimi_chat",
+  "orchestrator",
+  "probe_candidates",
+  "probe_gen",
+  "probe_reason",
+  "probe_tests",
+  "swarm",
+  "verify_provider",
+]
