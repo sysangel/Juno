@@ -180,7 +180,6 @@ class RainbowSweep:
 # Each tier is a fixed-width 5-cell bar so column widths never shift.
 # (glyph_bar, ascii_bar, ansi_color)
 TIERS: dict[str, tuple[str, str, str]] = {
-    "ultracode": ("\u25c6\u25c6\u25c6\u25c6\u25c6", "[#####]", PURPLE_BOLD),
     "flagship":  ("\u25c6\u25c6\u25c6\u25c6\u25c7", "[####.]", PURPLE),
     "strong":    ("\u25c6\u25c6\u25c6\u25c7\u25c7", "[###..]", PURPLE),
     "standard":  ("\u25c6\u25c6\u25c7\u25c7\u25c7", "[##...]", PURPLE_DIM),
@@ -219,19 +218,20 @@ def tier_for(opt: "ModelOption") -> str:
     """Return the strength tier for a model option.
 
     Honors an explicit `opt.tier` override; otherwise derives a sensible tier.
-    The single strongest coding route per provider gets `ultracode`.
+    The reserved "ultracode" concept is intentionally not a model strength tier;
+    future work can implement it as a selectable skill/preset.
     """
     if opt.tier and opt.tier != "standard":
-        return opt.tier
+        return "flagship" if opt.tier == "ultracode" else opt.tier
     model = (opt.model or "").lower()
     if opt.provider == "openai":
-        return "ultracode" if opt.key == "codex" else "flagship"
+        return "flagship" if opt.key in {"codex", "gpt5"} or "gpt-5" in model else "strong"
     if opt.provider == "claude-code":
         if "opus" in model or opt.key == "opus":
-            return "ultracode"
+            return "flagship"
         if "sonnet" in model:
             return "strong"
-        return "ultracode" if opt.key == "claude" else "strong"
+        return "strong"
     if opt.provider == "anthropic":
         return "flagship"
     if opt.provider == "echo":
@@ -253,6 +253,21 @@ def strength_bar(tier: str, *, color: bool) -> str:
     return glyph if color else ascii_
 
 
+MODEL_ROUTE_WIDTH = 30
+MODEL_ROW_WIDTH = 41
+
+
+def _fixed_cell(text: str, width: int) -> str:
+    """Return a display cell exactly `width` characters wide.
+
+    The model selector appends labels after this cell, so route names must not
+    stretch the row and knock later columns out of alignment.
+    """
+    if len(text) > width:
+        return text[: max(0, width - 1)] + "…"
+    return text.ljust(width)
+
+
 def format_model_row(opt: "ModelOption", *, color: bool) -> str:
     """Render a fixed-width, colored picker row for a model option.
 
@@ -262,33 +277,20 @@ def format_model_row(opt: "ModelOption", *, color: bool) -> str:
     altered by this decoration.
     """
     tier = tier_for(opt)
-    is_ultra = tier == "ultracode"
     bar_color = TIERS.get(tier, TIERS["standard"])[2]
     icon = strength_icon(opt, color=color)
     bar = strength_bar(tier, color=color)
     route = f"{opt.provider}/{opt.model}"
 
-    # Fixed-width plain cells.
-    sigil = ("\u26a1" if color else "!") if is_ultra else " "
-    icon_cell = f"{icon:<2}"
-    route_cell = f"{route:<22}"
-    if is_ultra:
-        badge = "ULTRACODE" if color else "*ULTRA*"
-    else:
-        badge = ""
+    icon_cell = _fixed_cell(icon, 2)
+    route_cell = _fixed_cell(route, MODEL_ROUTE_WIDTH)
 
     if not color:
-        # Plain text, no SGR.
-        return f"{sigil} {icon_cell} {route_cell} {bar} {badge}".rstrip()
+        # Plain text, no SGR; exact width keeps tests and fallback UI stable.
+        return f"{icon_cell} {route_cell} {bar}"
 
     colored_bar = colorize(bar, bar_color, color=color)
-    if is_ultra:
-        colored_badge = colorize(badge, LAVENDER, color=color)
-        colored_sigil = colorize(sigil, PURPLE_BOLD, color=color)
-    else:
-        colored_badge = badge
-        colored_sigil = sigil
-    return f"{colored_sigil} {icon_cell} {route_cell} {colored_bar} {colored_badge}".rstrip()
+    return f"{icon_cell} {route_cell} {colored_bar}"
 
 THINKING_MESSAGES = [
     "charting a clean orbit through context",

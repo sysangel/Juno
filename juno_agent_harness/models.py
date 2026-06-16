@@ -168,28 +168,49 @@ def normalize_provider(value: str) -> Provider:
     return provider  # type: ignore[return-value]
 
 
-def model_catalog() -> list[ModelOption]:
-    """Return grouped model choices for `/model` and the Juno picker.
+def _raw_model_catalog() -> list[ModelOption]:
+    """Return all selectable model aliases, including hidden duplicate routes.
 
-    Keep this list small and high-signal. Users can still type any raw model slug
-    with `/model <provider> <slug>`.
+    `model_catalog()` deduplicates this for display so the picker stays clean,
+    but aliases such as `fm3v4` should still resolve even when they point at the
+    same provider/model as another visible row.
     """
     return [
         ModelOption(
             key="codex",
-            section="Codex / OpenAI",
-            label=f"Codex / OpenAI default ({DEFAULT_OPENAI_MODEL})",
+            section="OpenAI / ChatGPT",
+            label="GPT-5.1 Codex",
             provider="openai",
-            model=DEFAULT_OPENAI_MODEL,
-            description="OpenAI-compatible API path using OPENAI_API_KEY.",
+            model="gpt-5.1-codex",
+            description="Coding-focused OpenAI route; use as the explicit Codex shortcut.",
+            tier="flagship",
         ),
         ModelOption(
             key="gpt5",
-            section="Codex / OpenAI",
+            section="OpenAI / ChatGPT",
             label="GPT-5.1",
             provider="openai",
             model="gpt-5.1",
-            description="General OpenAI model; useful fallback if OPENAI_MODEL is unset.",
+            description="Current general ChatGPT/OpenAI route.",
+            tier="flagship",
+        ),
+        ModelOption(
+            key="gpt5mini",
+            section="OpenAI / ChatGPT",
+            label="GPT-5.1 Mini",
+            provider="openai",
+            model="gpt-5.1-mini",
+            description="Cheaper/faster GPT-5.1 route for lighter work.",
+            tier="strong",
+        ),
+        ModelOption(
+            key="chatgpt",
+            section="OpenAI / ChatGPT",
+            label="ChatGPT latest",
+            provider="openai",
+            model="chatgpt-4o-latest",
+            description="ChatGPT-flavored OpenAI route for conversational testing.",
+            tier="strong",
         ),
         ModelOption(
             key="claude",
@@ -198,6 +219,7 @@ def model_catalog() -> list[ModelOption]:
             provider="claude-code",
             model=DEFAULT_CLAUDE_CODE_MODEL,
             description="Local Claude Code OAuth bridge; no ANTHROPIC_API_KEY required.",
+            tier="strong",
         ),
         ModelOption(
             key="sonnet",
@@ -206,6 +228,7 @@ def model_catalog() -> list[ModelOption]:
             provider="claude-code",
             model="sonnet",
             description="Fast Claude Code OAuth model alias.",
+            tier="strong",
         ),
         ModelOption(
             key="opus",
@@ -214,6 +237,7 @@ def model_catalog() -> list[ModelOption]:
             provider="claude-code",
             model="opus",
             description="Heavier Claude Code OAuth model alias if your account allows it.",
+            tier="flagship",
         ),
         ModelOption(
             key="anthropic",
@@ -222,6 +246,7 @@ def model_catalog() -> list[ModelOption]:
             provider="anthropic",
             model=DEFAULT_ANTHROPIC_MODEL,
             description="Direct Anthropic Messages API; needs ANTHROPIC_API_KEY.",
+            tier="flagship",
         ),
         ModelOption(
             key="or",
@@ -230,6 +255,7 @@ def model_catalog() -> list[ModelOption]:
             provider="openrouter",
             model=DEFAULT_OPENROUTER_MODEL,
             description="Uses the repo privacy-screened OpenRouter provider preferences.",
+            tier="standard",
         ),
         ModelOption(
             key="dp",
@@ -238,6 +264,7 @@ def model_catalog() -> list[ModelOption]:
             provider="openrouter",
             model=DEFAULT_OPENROUTER_DP_MODEL,
             description="Hermes-style dp shortcut.",
+            tier="strong",
         ),
         ModelOption(
             key="fm3v4",
@@ -246,6 +273,7 @@ def model_catalog() -> list[ModelOption]:
             provider="openrouter",
             model=DEFAULT_OPENROUTER_FM3V4_MODEL,
             description="Env override: HARNESS_FM3V4_MODEL.",
+            tier="strong",
         ),
         ModelOption(
             key="fbudget",
@@ -254,6 +282,7 @@ def model_catalog() -> list[ModelOption]:
             provider="openrouter",
             model=DEFAULT_OPENROUTER_FBUDGET_MODEL,
             description="Env override: HARNESS_FBUDGET_MODEL.",
+            tier="standard",
         ),
         ModelOption(
             key="fhigh",
@@ -262,6 +291,7 @@ def model_catalog() -> list[ModelOption]:
             provider="openrouter",
             model=DEFAULT_OPENROUTER_FHIGH_MODEL,
             description="Env override: HARNESS_FHIGH_MODEL.",
+            tier="strong",
         ),
         ModelOption(
             key="echo",
@@ -270,20 +300,42 @@ def model_catalog() -> list[ModelOption]:
             provider="echo",
             model="echo",
             description="No API key; returns `echo: <input>`.",
+            tier="light",
         ),
     ]
 
 
+def model_catalog() -> list[ModelOption]:
+    """Return deduplicated grouped model choices for `/model` and the picker.
+
+    Duplicate provider/model rows make the prompt_toolkit picker look uneven and
+    confusing. Keep the first visible option for a route; `model_aliases()` still
+    resolves every raw key for power users.
+    """
+    options: list[ModelOption] = []
+    seen: set[tuple[str, Provider, str]] = set()
+    for option in _raw_model_catalog():
+        route = (option.section, option.provider, option.model)
+        if route in seen:
+            continue
+        seen.add(route)
+        options.append(option)
+    return options
+
+
 def model_aliases() -> dict[str, ModelOption]:
     aliases: dict[str, ModelOption] = {}
-    for option in model_catalog():
+    for option in _raw_model_catalog():
         aliases[option.key.lower()] = option
     # Friendly synonyms.
     aliases.update({
-        "openai": aliases["codex"],
-        "chatgpt": aliases["codex"],
-        "gpt": aliases["codex"],
+        "openai": aliases["gpt5"],
+        "gpt": aliases["gpt5"],
+        "gpt-5": aliases["gpt5"],
         "gpt-5.1": aliases["gpt5"],
+        "gpt-5.1-codex": aliases["codex"],
+        "gpt-5.1-mini": aliases["gpt5mini"],
+        "chatgpt-4o-latest": aliases["chatgpt"],
         "claude-code": aliases["claude"],
         "cc": aliases["claude"],
         "openrouter": aliases["or"],

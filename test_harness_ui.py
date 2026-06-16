@@ -72,7 +72,7 @@ def test_normalize_provider_rejects_unknown():
 @pytest.mark.parametrize("token,provider,model", [
     ("sonnet", "claude-code", "sonnet"),
     ("opus", "claude-code", "opus"),
-    ("codex", "openai", harness.DEFAULT_OPENAI_MODEL),
+    ("codex", "openai", "gpt-5.1-codex"),
     ("dp", "openrouter", harness.DEFAULT_OPENROUTER_DP_MODEL),
     ("fhigh", "openrouter", harness.DEFAULT_OPENROUTER_FHIGH_MODEL),
     ("echo", "echo", "echo"),
@@ -93,7 +93,7 @@ def test_resolve_model_selection_raw_provider_pair():
 
 def test_format_model_catalog_is_segmented():
     text = harness.format_model_catalog("echo", "echo")
-    assert "Codex / OpenAI" in text
+    assert "OpenAI / ChatGPT" in text
     assert "Anthropic / Claude" in text
     assert "OpenRouter" in text
     assert "* echo" in text
@@ -484,12 +484,25 @@ def test_strength_bars_are_constant_width():
     assert ascii_widths == {len("[#####]")}
 
 
-def test_ultracode_routes_exist():
-    tiers = {(o.provider, o.key): harness.tier_for(o) for o in harness.model_catalog()}
-    assert tiers[("openai", "codex")] == "ultracode"
-    # At least one Anthropic/claude-code ultracode route.
-    assert "ultracode" in {harness.tier_for(o) for o in harness.model_catalog()
-                            if o.provider == "claude-code"}
+def test_model_catalog_has_newer_chatgpt_routes_and_no_duplicate_display_routes():
+    options = harness.model_catalog()
+    slugs = {o.model for o in options if o.provider == "openai"}
+    assert {"gpt-5.1", "gpt-5.1-codex", "gpt-5.1-mini", "chatgpt-4o-latest"} <= slugs
+
+    display_routes = [(o.section, o.provider, o.model) for o in options]
+    assert len(display_routes) == len(set(display_routes))
+
+
+def test_model_rows_are_fixed_width_and_do_not_say_ultracode():
+    rows = [harness.format_model_row(o, color=False) for o in harness.model_catalog()]
+    assert rows
+    assert {len(row) for row in rows} == {harness.MODEL_ROW_WIDTH}
+    assert all("ULTRACODE" not in row.upper() for row in rows)
+    assert all("*ULTRA*" not in row.upper() for row in rows)
+
+
+def test_no_catalog_route_is_reserved_ultracode_tier():
+    assert "ultracode" not in {harness.tier_for(o) for o in harness.model_catalog()}
 
 
 def test_format_model_row_does_not_change_key():
@@ -501,20 +514,20 @@ def test_format_model_row_does_not_change_key():
     assert harness.model_aliases()["codex"].key == "codex"
 
 
-def test_ascii_fallback_has_bar_and_ultra_badge():
+def test_ascii_fallback_has_bar_without_ultra_badge():
     codex = next(o for o in harness.model_catalog() if o.key == "codex")
     row = harness.format_model_row(codex, color=False)
-    assert "[#####]" in row
-    assert "*ULTRA*" in row
+    assert "[" in row and "]" in row
+    assert "ULTRA" not in row.upper()
     # No ANSI escapes in plain mode.
     assert "\033" not in row
 
 
-def test_format_model_row_truecolor_has_sgr():
+def test_format_model_row_truecolor_has_sgr_without_ultracode_badge():
     codex = next(o for o in harness.model_catalog() if o.key == "codex")
     row = harness.format_model_row(codex, color=True)
     assert "\033[" in row
-    assert "ULTRACODE" in row
+    assert "ULTRACODE" not in row
 
 
 # --- Task 4: calm the picker (style= kwarg) ---

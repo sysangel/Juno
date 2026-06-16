@@ -12,9 +12,9 @@ from .runtime import HarnessRuntime, MEMORY_TARGETS, PROVIDER_WORDS
 
 from .theme import (
     DEFAULT_THEME, JunoTheme, LAVENDER, PURPLE, PURPLE_BOLD, PURPLE_DIM,
-    RESET, RainbowSweep, colorize, format_assistant_response,
+    RESET, colorize, format_assistant_response,
     format_command_output, format_error, format_model_row, format_usage_line,
-    format_waiting_static, tier_for, use_rainbow,
+    format_waiting_static,
 )
 
 def print_banner(runtime: HarnessRuntime, *, color: bool, theme: JunoTheme = DEFAULT_THEME) -> None:
@@ -329,11 +329,6 @@ class PromptToolkitUI:
         if not chosen or chosen.startswith("__section__"):
             return "model selection cancelled"
         option = model_aliases()[chosen]
-        # Boost trigger (req 6): selecting the strongest (ultracode) route fires
-        # one short rainbow sweep. Gated behind use_rainbow() so non-TTY/plain
-        # mode emits no SGR and no animation thread.
-        if tier_for(option) == "ultracode" and use_rainbow():
-            RainbowSweep("✦ ULTRACODE ENGAGED ✧", cycles=1, fps=20).stop()
         return self.runtime.switch_provider(option.provider, option.model)
 
     def run(self) -> int:
