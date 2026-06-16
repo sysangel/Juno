@@ -5,7 +5,8 @@ It is deliberately smaller than Hermes, but it pulls over the pieces that matter
 for this project:
 
 - provider-neutral chat history
-- OpenRouter with the existing no-train + Western allowlist privacy screen
+- OpenRouter (no-train + provider screening now enforced at the OpenRouter
+  **account** level; the harness no longer injects a per-request provider block)
 - OpenAI/ChatGPT through `OPENAI_API_KEY`
 - Anthropic through the first-party Messages API and `ANTHROPIC_API_KEY`
 - Claude Code through its existing OAuth login (`claude auth login`) so a
@@ -60,15 +61,20 @@ in-terminal UI (deep blue/purple theme) built on `prompt_toolkit`. It gives you:
 - **command/argument completion**: slash commands, model catalog keys after
   `/model`, and `list/add/replace/remove/reload` + `memory|user` after `/memory`
 - **segmented model picker**: in full Juno mode, `/model` opens a selection list
-  grouped by `Codex / OpenAI`, `Anthropic / Claude`, and `OpenRouter`
+  grouped by `Codex / OpenAI`, `Anthropic / Claude`, and `OpenRouter`. Each row
+  shows a fixed-width strength bar and a tier icon; the single strongest coding
+  route per provider is tagged `ULTRACODE` (a ⚡ sigil + bar), and selecting it
+  fires a one-shot rainbow boost sweep on a color TTY
 - **persistent history** across runs at `<harness-home>/history.txt`
   (use Up/Down to recall previous input)
 - **multiline input**: `Enter` submits, `Esc` then `Enter` (or `Alt-Enter`)
   inserts a newline
-- **Hermes-like response boxes**: assistant replies render in bordered Juno boxes
+- **Hermes-like response boxes**: Juno replies render in bordered boxes
   so they are visually distinct from prompts, command output, and usage metadata
-- **purple thinking status**: before blocking provider calls, Juno prints a
-  rotating italic/violet “thinking” line such as `✦ asking the purple oracle...`
+- **inline waiting state**: while a blocking provider call runs, Juno keeps the
+  bottom toolbar in place and animates it there — no screen flip. The animation
+  is gated on a real TTY and `JUNO_WAIT_ANIMATION` (set `JUNO_WAIT_ANIMATION=0`
+  to force the static waiting line and a synchronous call)
 - a token/session usage line after each model response
 
 ### UI modes (`--ui`)
@@ -86,6 +92,13 @@ in-terminal UI (deep blue/purple theme) built on `prompt_toolkit`. It gives you:
 - `--ui prompt`: force Juno; raises an actionable error if `prompt_toolkit` or a
   usable console is missing.
 - `-q/--query`: one-shot mode, no UI (unchanged).
+- `--tui`: alias for `--ui prompt` (force Juno); `--cli`: alias for `--ui plain`
+  (passing both is an error).
+
+A persisted default model in `<harness-home>/config.json` is honored at startup;
+resolution order is CLI `--provider`/`--model` > config.json default > built-in
+`default_model(provider)` fallback. Use `--default-model KEY|PROVIDER/MODEL` to
+persist a new default into `config.json` (it prints the new default, then runs).
 
 > **Windows / Git Bash note:** `prompt_toolkit` needs a real Windows console
 > (cmd.exe, Windows Terminal, or PowerShell). Under MSYS/Git-Bash (`xterm`),
@@ -93,6 +106,14 @@ in-terminal UI (deep blue/purple theme) built on `prompt_toolkit`. It gives you:
 > plain REPL instead of crashing. Run from a Windows console to get full Juno.
 
 The `HARNESS_UI` env var sets the default mode (`auto`, `plain`, or `prompt`).
+
+### Color and the rainbow boost
+
+Juno's animated rainbow boost (the ULTRACODE sweep) runs only when stdout is a
+real TTY and `NO_COLOR` is unset; setting `NO_COLOR` (to any value) disables it
+along with other color output. There is no dedicated rainbow on/off env var.
+`COLORTERM=truecolor` (or `24bit`) selects the 24-bit gradient; otherwise the
+sweep degrades to a 256-color cycle.
 
 ## State layout
 
@@ -116,6 +137,10 @@ Default home is `~/.agent-harness`, override with `AGENT_HARNESS_HOME` or
 /model                      full Juno: open model picker; plain: print catalog
 /model <key>                e.g. /model sonnet, /model codex, /model dp
 /model <provider> [model]   e.g. /model openrouter deepseek/deepseek-v4-pro
+/model default              report the current persisted default model
+/model default <ref>        persist a default (KEY or PROVIDER/MODEL) to config.json
+/skills                     list local skills (SKILL.md under <home>/skills)
+/menu                       command palette of common actions
 /exit
 /reset                      clear conversation, keep memory snapshot
 /clear                      alias for /reset

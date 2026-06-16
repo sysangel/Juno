@@ -12,21 +12,22 @@ license = { text = "MIT" }
 authors = [{ name = "sysangel" }]
 dependencies = [
   "langgraph>=1.0,<2",
-  "langchain>=0.3,<1",
-  "langchain-openai>=0.2,<1",
-  "langchain-aws>=0.2,<1",
-  "openai>=1.40,<2",
+  "langchain>=1,<2",
+  "langchain-openai>=1,<2",
+  "langchain-aws>=1,<2",
+  "openai>=2,<3",
   "python-dotenv>=1,<2",
   "prompt_toolkit>=3,<4",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9"]
+dev = ["pytest>=8,<10"]
 
 [project.scripts]
-juno = "harness:main"
+juno = "juno_agent_harness.cli:main"
 
 [tool.setuptools]
+packages = ["juno_agent_harness"]
 py-modules = [
   "agent_loop",
   "chat",
@@ -36,8 +37,23 @@ py-modules = [
   "orchestrator",
   "probe_candidates",
   "probe_gen",
+  "probe_matrix",
   "probe_reason",
   "probe_tests",
   "swarm",
   "verify_provider",
 ]
+
+[tool.pytest.ini_options]
+norecursedirs = [
+  ".git",
+  ".venv",
+  "venv",
+  "env",
+  "build",
+  "dist",
+  "runs",
+  "headtohead_out",
+  "agent_workspace",
+]
+addopts = ["--import-mode=importlib"]

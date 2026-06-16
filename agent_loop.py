@@ -54,65 +54,22 @@ from langgraph.graph import END, START, StateGraph
 # Configuration constants
 # ---------------------------------------------------------------------------
 
-# Default "team" = all-DeepSeek (decision 2026-06-14): DeepSeek V4 Pro is fast,
-# reliable, and honors reasoning caps, so both roles default to it and run as a
-# homogeneous, quick team. Kimi K2.7 Code is opt-in via --code-model (it is a
-# heavy over-reasoner that spirals on open-ended prompts via cheap providers -
-# see HANDOFF.md). MiniMax M3 is an interesting cheap code-drafter alternative,
-# also opt-in. pytest stays the impartial judge.
-DEFAULT_CODE_MODEL_OPENROUTER = "deepseek/deepseek-v4-pro"
-DEFAULT_TEST_MODEL_OPENROUTER = "deepseek/deepseek-v4-pro"
-
-DEFAULT_MODEL_OPENROUTER = DEFAULT_CODE_MODEL_OPENROUTER
-DEFAULT_BEDROCK_MODEL_ID = "us.deepseek.r1-v1:0"
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-
-# Per-LLM-call HTTP timeout (seconds) and retry budget for OpenRouter. A finite
-# timeout is essential: without it a hung/slow provider connection stalls the
-# whole loop indefinitely (only the pytest subprocess is otherwise time-bounded).
-OPENROUTER_REQUEST_TIMEOUT = 600
-OPENROUTER_MAX_RETRIES = 1
-
-# Reasoning-heavy models (Kimi K2.7 Code, DeepSeek V4 Pro) can spend their ENTIRE
-# output budget on hidden reasoning and return EMPTY content (observed: 65536
-# reasoning tokens, finish_reason=length, content=""). Cap reasoning so the model
-# thinks briefly then ANSWERS, and bound total output as a backstop.
-OPENROUTER_REASONING_MAX_TOKENS = 3000   # set to 0/None to disable the cap
-OPENROUTER_MAX_OUTPUT_TOKENS = 16000
-
-# Chinese providers to exclude even when they assert no-retention. OpenRouter's
-# data_collection:deny screens for no-train/no-retention but NOT for geography;
-# under sort:price alone it routed DeepSeek V4 Pro to Baidu. Per the "no Chinese
-# first-party APIs for internal data" policy we deny CN providers by name too.
-OPENROUTER_CN_PROVIDERS = [
-    "Baidu", "DeepSeek", "Moonshot AI", "Moonshot", "Alibaba", "Alibaba Cloud",
-    "Qwen", "Zhipu", "Zhipu AI", "Z.AI", "ByteDance", "Volcengine", "Tencent",
-    "Hunyuan", "MiniMax", "StepFun", "01.AI", "SiliconFlow", "iFlytek",
-    "StreamLake", "Kuaishou", "SenseTime", "Baichuan", "InternLM",
-]
-
-# Vetted non-CN (US/EU) inference providers that assert no-retention. Used as a
-# hard ALLOWLIST: a denylist can't be proven complete (it let StreamLake /
-# Kuaishou through under sort:price), so we restrict routing to these and let
-# sort:price pick the cheapest. Verified to serve both default models
-# (GMICloud for V4 Pro, Parasail for Kimi).
-OPENROUTER_WESTERN_PROVIDERS = [
-    "DeepInfra", "Together", "Fireworks", "GMICloud", "Baseten",
-    "Lambda", "Hyperbolic", "Nebius", "Parasail",
-]
-
-# Privacy screen for OpenRouter routing, injected into EVERY OpenRouter request
-# via ChatOpenAI(extra_body=...):
-#   data_collection: "deny" -> only no-train / no-retention endpoints
-#   only: <Western>         -> hard allowlist; GUARANTEES non-CN routing
-#   ignore: <CN providers>  -> belt-and-suspenders denylist
-#   sort: "price"           -> cheapest among the remaining compliant endpoints
-OPENROUTER_PROVIDER_PREFS = {
-    "data_collection": "deny",
-    "only": OPENROUTER_WESTERN_PROVIDERS,
-    "ignore": OPENROUTER_CN_PROVIDERS,
-    "sort": "price",
-}
+# Shared OpenRouter policy/model defaults. The allowlist/denylist lives in the
+# lightweight package module so both `agent_loop.py` and the Juno CLI harness use
+# the same privacy screen without making the harness import LangChain/LangGraph.
+from juno_agent_harness.provider_policy import (
+    DEFAULT_BEDROCK_MODEL_ID,
+    DEFAULT_CODE_MODEL_OPENROUTER,
+    DEFAULT_MODEL_OPENROUTER,
+    DEFAULT_TEST_MODEL_OPENROUTER,
+    OPENROUTER_BASE_URL,
+    OPENROUTER_HEADERS,
+    OPENROUTER_MAX_OUTPUT_TOKENS,
+    OPENROUTER_MAX_RETRIES,
+    OPENROUTER_PROVIDER_PREFS,
+    OPENROUTER_REASONING_MAX_TOKENS,
+    OPENROUTER_REQUEST_TIMEOUT,
+)
 
 SOLUTION_FILENAME = "solution.py"
 TEST_FILENAME = "test_solution.py"
@@ -122,13 +79,6 @@ TEST_FILENAME = "test_solution.py"
 # _recursion_limit_for(). Each loop turn costs ~2 LangGraph super-steps
 # (write_code + run_tests), so a fixed cap would silently break large budgets.
 RECURSION_LIMIT = 100
-
-# Attribution headers for OpenRouter's leaderboard (optional, harmless).
-OPENROUTER_HEADERS = {
-    "HTTP-Referer": "https://github.com/angelsystems/agent-loop",
-    "X-Title": "Self-Iterating Agent Loop",
-}
-
 
 # ---------------------------------------------------------------------------
 # Graph state
